@@ -73,7 +73,7 @@ func GenerateServiceJson(data *ServiceData) string {
 	{
 		"credentials":{
 			"password":"PASSWORD",
-			"uri":"http://foo.com"
+			"uri":"%s"
 		},
 		"options":{},
 		"plan_option":{"what":"is this?"},
@@ -86,6 +86,7 @@ func GenerateServiceJson(data *ServiceData) string {
 		"tags":["some-tag","some-other-tag"]
 	}
 	`,
+		data.URI,
 		data.Label,
 		data.Provider,
 		data.Version,
@@ -103,14 +104,14 @@ func GenerateMostlyEmptyServiceJson() string {
 	`
 }
 
-
-	type ServiceData struct {
+type ServiceData struct {
 	Label string
 	Provider string
 	Version string
 	Vendor string
 	Plan string
 	Name string
+	URI string
 }
 
 type ParserSuite struct {
@@ -237,8 +238,8 @@ func (suite *ParserSuite) TestServicesJsonEnvironmentVariablesWithNoServices(c *
 }
 
 func (suite *ParserSuite) TestServicesJsonEnvironmentVariablesWithMultipleService(c *C) {
-	service1 := &ServiceData{Label: "label-1", Provider: "provider-1", Version: "version-1", Vendor: "vendor-1", Plan: "plan-1", Name: "name-1"}
-	service2 := &ServiceData{Label: "label-2", Provider: "provider-2", Version: "version-2", Vendor: "vendor-2", Plan: "plan-2", Name: "name-2"}
+	service1 := &ServiceData{Label: "label-1", Provider: "provider-1", Version: "version-1", Vendor: "vendor-1", Plan: "plan-1", Name: "name-1", URI:"http://foo.com"}
+	service2 := &ServiceData{Label: "label-2", Provider: "provider-2", Version: "version-2", Vendor: "vendor-2", Plan: "plan-2", Name: "name-2", URI:"http://foo.com"}
 
 	suite.inputData.Services = fmt.Sprintf("[%s,%s]", GenerateServiceJson(service1),GenerateServiceJson(service2))
 
@@ -277,6 +278,19 @@ func (suite *ParserSuite) TestServicesJsonEnvironmentVariablesWithServiceThatHas
 	c.Assert(len(service_json), Equals, 1)
 }
 
+func (suite *ParserSuite) TestDatabaseURLEnvironmentVariablesWithNoServices(c *C) {
+	environment := suite.GetEnvironmentVariablesForJSON(GenerateJSON(suite.inputData), c)
+	c.Assert(environment, BetterNot(HasKey), "DATABASE_URL")
+}
+
+func (suite *ParserSuite) TestDatabaseURLEnvironmentVariableWithServices(c *C) {
+	service1 := &ServiceData{Label: "foo", Provider: "provider-1", Version: "version-1", Vendor: "vendor-1", Plan: "plan-1", Name: "foo_production", URI:"postgresql://a:b@foo.com?q=2"}
+	service2 := &ServiceData{Label: "bar", Provider: "provider-1", Version: "version-1", Vendor: "vendor-1", Plan: "plan-1", Name: "bar", URI:"mysql://a:b@bar.com?q=2"}
+	suite.inputData.Services = fmt.Sprintf("[%s,%s]", GenerateServiceJson(service1), GenerateServiceJson(service2))
+	environment := suite.GetEnvironmentVariablesForJSON(GenerateJSON(suite.inputData), c)
+	c.Assert(environment["DATABASE_URL"], Equals, "postgres://a:b@foo.com?q=2")
+}
+
 //todo: test profile.d stuff
-//todo: test database_url_string (0, 1, many)... :(
+//todo: test user environments
 

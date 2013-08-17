@@ -93,6 +93,16 @@ func (parser *Parser)GenerateEnvironmentScriptFromJSON(rawJSON string) (string, 
 	}
 	parser.addSystemEnvironmentVariable("VCAP_SERVICES", string(servicesJSON))
 
+	dbServicesRepresentations := parser.generateDBServiceRepresentationArray(input)
+	if len(dbServicesRepresentations) > 0 {
+		databaseUriGenerator := NewDatabaseURIGenerator(dbServicesRepresentations)
+		databaseUrl, err :=  databaseUriGenerator.Generate()
+		if (err != nil) {
+			return "", err
+		}
+		parser.addSystemEnvironmentVariable("DATABASE_URL", databaseUrl)
+	}
+
 	return parser.generateOutput(), nil
 }
 
@@ -174,6 +184,19 @@ func (parser *Parser)generateServicesJSON(input InputJSON) ([]byte, error) {
 	}
 
 	return json.Marshal(servicesData)
+}
+
+func (parser *Parser)generateDBServiceRepresentationArray(input InputJSON) ([]DBServiceRepresentation) {
+	services := input.NatsData.Services
+	servicesData := make([]DBServiceRepresentation, len(services))
+
+	for _, service := range services {
+		uri, ok := service.Credentials["uri"].(string)
+		if ok {
+			servicesData = append(servicesData, DBServiceRepresentation{Name: service.Name, URI: uri})
+		}
+	}
+	return servicesData
 }
 
 func (parser *Parser)addSystemEnvironmentVariable(name string, value string) {

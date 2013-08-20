@@ -19,6 +19,7 @@ type InputData struct {
 	InstanceConsoleContainerPort int
 	InstanceDebugContainerPort   int
 	Services                     string
+	Env                          string
 }
 
 const Mem = 1024
@@ -47,7 +48,8 @@ func GenerateJSON(input *InputData) string {
 				"simple-app.cfapp.com",
 				"other-simple-app.cfapp.com"
 			],
-			"services":%s
+			"services":%s,
+			"env":%s
 		},
 		"instance_guid":"%s",
 		"instance_container_port":%d,
@@ -62,6 +64,7 @@ func GenerateJSON(input *InputData) string {
 		ApplicationVersion,
 		ApplicationName,
 		input.Services,
+		input.Env,
 		InstanceGuid,
 		InstanceContainerPort,
 		InstanceConsoleContainerPort,
@@ -129,6 +132,7 @@ func (suite *ParserSuite) SetUpTest(c *C) {
 	suite.inputData.Debug = ""
 	suite.inputData.InstanceDebugContainerPort = 0
 	suite.inputData.Services = "[]"
+	suite.inputData.Env = "[]"
 }
 
 func (suite *ParserSuite) GetEnvironmentVariablesForJSON(json string, c *C) map[string]string {
@@ -265,23 +269,54 @@ func (suite *ParserSuite) TestDatabaseURLEnvironmentVariableWithServices(c *C) {
 	c.Assert(environment["DATABASE_URL"], Equals, "postgres://a:b@foo.com?q=2")
 }
 
-func (suite *ParserSuite) TestProfileDEnvironmentVariables(c *C) {
-	testDir, _ := ioutil.TempDir("/tmp", "profile_d")
-	os.MkdirAll(testDir + "/app/.profile.d", 0777)
-	defer os.RemoveAll(testDir)
+func setUpProfileD() (testDir string) {
+	testDir, _ = ioutil.TempDir("/tmp", "profile_d")
+	os.MkdirAll(testDir+"/app/.profile.d", 0777)
 
 	profileDContents := `#!/bin/bash
 export FROM_PROFILE_D="yes"
 export RAILS_ENV="production"
-exprot LANG="en_US.UTF-8"
+export LANGUAGE="english"
+export MEMORY_LIMIT="512m"
 `
-	ioutil.WriteFile(testDir + "/app/.profile.d/ruby.sh", []byte(profileDContents), 0777)
+	ioutil.WriteFile(testDir+"/app/.profile.d/ruby.sh", []byte(profileDContents), 0777)
+	return
+}
+
+func (suite *ParserSuite) TestProfileDEnvironmentVariables(c *C) {
+	testDir := setUpProfileD()
+	defer os.RemoveAll(testDir)
 
 	os.Chdir(testDir)
 	environment := suite.GetEnvironmentVariablesForJSON(GenerateJSON(suite.inputData), c)
 	c.Assert(environment["FROM_PROFILE_D"], Equals, "yes")
 	c.Assert(environment["RAILS_ENV"], Equals, "production")
-	c.Assert(environment["LANG"], Equals, "en_US.UTF-8")
+	c.Assert(environment["LANGUAGE"], Equals, "english")
 }
 
-//todo: test user environments
+func (suite *ParserSuite) TestUserEnvironmentVariables(c *C) {
+	suite.inputData.Env = `["FROM_USER=yes", "RAILS_ENV=development"]`
+	environment := suite.GetEnvironmentVariablesForJSON(GenerateJSON(suite.inputData), c)
+	c.Assert(environment["FROM_USER"], Equals, "yes")
+	c.Assert(environment["RAILS_ENV"], Equals, "development")
+}
+
+func (suite *ParserSuite) TestProfileDOverwriteSystemEnvironmentVariables(c *C) {
+	testDir := setUpProfileD()
+	defer os.RemoveAll(testDir)
+
+	os.Chdir(testDir)
+	environment := suite.GetEnvironmentVariablesForJSON(GenerateJSON(suite.inputData), c)
+	c.Assert(environment["MEMORY_LIMIT"], Equals, "512m")
+}
+
+func (suite *ParserSuite) TestUserOvewriteProfileDEnvironmentVariables(c *C) {
+	suite.inputData.Env = `["LANGUAGE=русский"]`
+
+	testDir := setUpProfileD()
+	defer os.RemoveAll(testDir)
+
+	os.Chdir(testDir)
+	environment := suite.GetEnvironmentVariablesForJSON(GenerateJSON(suite.inputData), c)
+	c.Assert(environment["LANGUAGE"], Equals, "русский")
+}

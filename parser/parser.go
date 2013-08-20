@@ -8,6 +8,7 @@ import (
 
 type Parser struct {
 	systemEnvironmentVariables []EnvironmentPair
+	userEnvironmentVariables   []EnvironmentPair
 	profileDScript             string
 }
 
@@ -28,6 +29,7 @@ type InputNatsDataJSON struct {
 	Name               string              `json:"name"`
 	Uris               []string            `json:"uris"`
 	Services           []InputServiceJSON  `json:"services"`
+	Env                []string            `json:"env"`
 }
 
 type InputNatsLimitsJSON struct {
@@ -43,7 +45,6 @@ type EnvironmentPair struct {
 
 func NewParser() *Parser {
 	parser := &Parser{}
-	parser.systemEnvironmentVariables = []EnvironmentPair{}
 	return parser
 }
 
@@ -93,6 +94,11 @@ func (parser *Parser) GenerateEnvironmentScriptFromJSON(rawJSON string) (string,
 
 	parser.profileDScript = generateProfileDReader()
 
+	userEnvironmentVariables := generateUserEnvironment(input.NatsData.Env)
+	for _, envPair := range userEnvironmentVariables {
+		parser.userEnvironmentVariables = append(parser.userEnvironmentVariables, envPair)
+	}
+
 	return parser.generateOutput(), nil
 }
 
@@ -119,5 +125,8 @@ func (parser *Parser) generateOutput() string {
 		output = fmt.Sprintf("%sexport %s=%s\n", output, pair.Name, strconv.Quote(pair.Value))
 	}
 	output += parser.profileDScript
+	for _, pair := range parser.userEnvironmentVariables {
+		output = fmt.Sprintf("%sexport %s=%s\n", output, pair.Name, strconv.Quote(pair.Value))
+	}
 	return output
 }

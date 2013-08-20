@@ -48,26 +48,26 @@ func (suite *VcapServicesGeneratorSuite) TestSerialization(c *C) {
 	result, err := suite.generateServicesJSON(input)
 	c.Assert(err, IsNil)
 
-	output := make(map[string]ServiceJSON)
+	var output map[string]interface{}
 	json.Unmarshal(result, &output)
 
-	output1 := output["rds"]
+	output1 := output["rds"].(map[string]interface{})
 
-	c.Assert(output1.Name, Equals, input1.Name)
-	c.Assert(output1.Label, Equals, input1.Label)
-	c.Assert(output1.Tags, DeepEquals, input1.Tags)
-	c.Assert(output1.Credentials, DeepEquals, input1.Credentials)
-	c.Assert(output1.Plan, Equals, input1.Plan)
-	c.Assert(output1.PlanOption, DeepEquals, input1.PlanOption)
+	c.Assert(output1["name"], Equals, input1.Name)
+	c.Assert(output1["label"], Equals, input1.Label)
+	c.Assert(output1["tags"], DeepEquals, []interface{}{"first-tag", "second-tag"})
+	c.Assert(output1["credentials"], DeepEquals, input1.Credentials)
+	c.Assert(output1["plan"], Equals, input1.Plan)
+	c.Assert(output1["plan_option"], DeepEquals, input1.PlanOption)
 
-	output2 := output["document"]
+	output2 := output["document"].(map[string]interface{})
 
-	c.Assert(output2.Name, Equals, input2.Name)
-	c.Assert(output2.Label, Equals, input2.Label)
-	c.Assert(output2.Tags, DeepEquals, input2.Tags)
-	c.Assert(output2.Credentials, DeepEquals, input2.Credentials)
-	c.Assert(output2.Plan, Equals, input2.Plan)
-	c.Assert(output2.PlanOption, DeepEquals, input2.PlanOption)
+	c.Assert(output2["name"], Equals, input2.Name)
+	c.Assert(output2["label"], Equals, input2.Label)
+	c.Assert(output2["tags"], DeepEquals, []interface{}{"mongo", "doc"})
+	c.Assert(output2["credentials"], DeepEquals, input2.Credentials)
+	c.Assert(output2["plan"], Equals, input2.Plan)
+	c.Assert(output2["plan_option"], DeepEquals, input2.PlanOption)
 }
 
 func (suite *VcapServicesGeneratorSuite) TestFailIfMissingLabel(c *C) {

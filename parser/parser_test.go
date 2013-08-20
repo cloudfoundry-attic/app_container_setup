@@ -248,18 +248,6 @@ func (suite *ParserSuite) TestServicesJsonEnvironmentVariablesWithMultipleServic
 	err := json.Unmarshal([]byte(environment["VCAP_SERVICES"]), &services_json)
 	c.Assert(err, IsNil)
 	c.Assert(len(services_json), Equals, 2)
-
-	for index := 1; index <= 2; index++ {
-		i := strconv.Itoa(index)
-		c.Assert(services_json["label-"+i], NotNil)
-		service_json := services_json["label-"+i].(map[string]interface{})
-		c.Assert(service_json["name"], Equals, "name-"+i)
-		c.Assert(service_json["label"], Equals, "label-"+i)
-		c.Assert(service_json["tags"], DeepEquals, []interface{}{"some-tag", "some-other-tag"})
-		c.Assert(service_json["credentials"], DeepEquals, map[string]interface{}{"password": "PASSWORD", "uri": "http://foo.com"})
-		c.Assert(service_json["plan_option"], DeepEquals, map[string]interface{}{"what": "is this?"})
-		c.Assert(service_json["plan"], Equals, "plan-"+i)
-	}
 }
 
 func (suite *ParserSuite) TestDatabaseURLEnvironmentVariablesWithNoServices(c *C) {

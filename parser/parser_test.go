@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	. "launchpad.net/gocheck"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -136,6 +137,7 @@ func (suite *ParserSuite) GetEnvironmentVariablesForJSON(json string, c *C) map[
 	c.Assert(err, IsNil)
 
 	ioutil.WriteFile("/tmp/env_test", []byte(script+"\n env"), 0777)
+	defer os.Remove("/tmp/env_test")
 	output, err := exec.Command("/bin/bash", "/tmp/env_test").Output()
 	c.Assert(err, IsNil)
 
@@ -263,5 +265,23 @@ func (suite *ParserSuite) TestDatabaseURLEnvironmentVariableWithServices(c *C) {
 	c.Assert(environment["DATABASE_URL"], Equals, "postgres://a:b@foo.com?q=2")
 }
 
-//todo: test profile.d stuff
+func (suite *ParserSuite) TestProfileDEnvironmentVariables(c *C) {
+	testDir, _ := ioutil.TempDir("/tmp", "profile_d")
+	os.MkdirAll(testDir + "/app/.profile.d", 0777)
+	defer os.RemoveAll(testDir)
+
+	profileDContents := `#!/bin/bash
+export FROM_PROFILE_D="yes"
+export RAILS_ENV="production"
+exprot LANG="en_US.UTF-8"
+`
+	ioutil.WriteFile(testDir + "/app/.profile.d/ruby.sh", []byte(profileDContents), 0777)
+
+	os.Chdir(testDir)
+	environment := suite.GetEnvironmentVariablesForJSON(GenerateJSON(suite.inputData), c)
+	c.Assert(environment["FROM_PROFILE_D"], Equals, "yes")
+	c.Assert(environment["RAILS_ENV"], Equals, "production")
+	c.Assert(environment["LANG"], Equals, "en_US.UTF-8")
+}
+
 //todo: test user environments

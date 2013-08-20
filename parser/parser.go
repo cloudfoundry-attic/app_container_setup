@@ -8,6 +8,7 @@ import (
 
 type Parser struct {
 	systemEnvironmentVariables []EnvironmentPair
+	profileDScript             string
 }
 
 type InputJSON struct {
@@ -90,6 +91,8 @@ func (parser *Parser) GenerateEnvironmentScriptFromJSON(rawJSON string) (string,
 		parser.addSystemEnvironmentVariable("DATABASE_URL", databaseUrl)
 	}
 
+	parser.profileDScript = generateProfileDReader()
+
 	return parser.generateOutput(), nil
 }
 
@@ -115,5 +118,6 @@ func (parser *Parser) generateOutput() string {
 	for _, pair := range parser.systemEnvironmentVariables {
 		output = fmt.Sprintf("%sexport %s=%s\n", output, pair.Name, strconv.Quote(pair.Value))
 	}
+	output += parser.profileDScript
 	return output
 }

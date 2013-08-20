@@ -219,9 +219,6 @@ func (suite *ParserSuite) TestApplicationJsonEnvironmentVariables(c *C) {
 	c.Assert(application_json["application_name"], Equals, ApplicationName)
 	c.Assert(application_json["name"], Equals, ApplicationName)
 
-	c.Assert(application_json["application_name"], Equals, ApplicationName)
-	c.Assert(application_json["name"], Equals, ApplicationName)
-
 	c.Assert(application_json["uris"], DeepEquals, []interface{}{"simple-app.cfapp.com", "other-simple-app.cfapp.com"})
 
 	c.Assert(application_json["users"], IsNil)

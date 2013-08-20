@@ -2,7 +2,6 @@ package parser
 
 import (
 	"encoding/json"
-
 	. "launchpad.net/gocheck"
 )
 

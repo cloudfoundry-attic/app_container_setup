@@ -265,20 +265,6 @@ func (suite *ParserSuite) TestServicesJsonEnvironmentVariablesWithMultipleServic
 	}
 }
 
-func (suite *ParserSuite) TestServicesJsonEnvironmentVariablesWithServiceThatHasMissingEntries(c *C) {
-	suite.inputData.Services = fmt.Sprintf("[%s]", GenerateMostlyEmptyServiceJson())
-	environment := suite.GetEnvironmentVariablesForJSON(GenerateJSON(suite.inputData), c)
-	c.Assert(environment, HasKey, "VCAP_SERVICES")
-
-	var services_json map[string]interface{}
-	err := json.Unmarshal([]byte(environment["VCAP_SERVICES"]), &services_json)
-	c.Assert(err, IsNil)
-	c.Assert(len(services_json), Equals, 1)
-	service_json := services_json["label-1"].(map[string]interface{})
-	c.Assert(service_json["label"], Equals, "label-1")
-	c.Assert(len(service_json), Equals, 1)
-}
-
 func (suite *ParserSuite) TestDatabaseURLEnvironmentVariablesWithNoServices(c *C) {
 	environment := suite.GetEnvironmentVariablesForJSON(GenerateJSON(suite.inputData), c)
 	c.Assert(environment, BetterNot(HasKey), "DATABASE_URL")

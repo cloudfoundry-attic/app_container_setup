@@ -70,3 +70,17 @@ func (suite *VcapServicesGeneratorSuite) TestSerialization(c *C) {
 	c.Assert(output2.Plan, Equals, input2.Plan)
 	c.Assert(output2.PlanOption, DeepEquals, input2.PlanOption)
 }
+
+func (suite *VcapServicesGeneratorSuite) TestFailIfMissingLabel(c *C) {
+	input := InputServiceJSON{Name: "some-name"}
+	result, err := suite.generateServicesJSON([]InputServiceJSON{input})
+	c.Assert(result, IsNil)
+	c.Assert(err, Equals, ErrMissingLabel)
+}
+
+func (suite *VcapServicesGeneratorSuite) TestMissingFields(c *C) {
+	input := InputServiceJSON{Label: "mysql"}
+	result, err := suite.generateServicesJSON([]InputServiceJSON{input})
+	c.Assert(err, IsNil)
+	c.Assert(string(result), Equals, `{"mysql":{"label":"mysql"}}`)
+}

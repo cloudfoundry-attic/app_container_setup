@@ -2,6 +2,7 @@ package parser
 
 import (
 	"encoding/json"
+	"errors"
 )
 
 type ServiceJSON struct {
@@ -25,10 +26,15 @@ type InputServiceJSON struct {
 	Name        string                 `json:"name"`
 }
 
+var ErrMissingLabel = errors.New("Label cannot be empty")
+
 func (parser *Parser) generateServicesJSON(services []InputServiceJSON) ([]byte, error) {
 	servicesData := make(map[string]*ServiceJSON)
 
 	for _, service := range services {
+		if service.Label == "" {
+			return nil, ErrMissingLabel
+		}
 		servicesData[service.Label] = &ServiceJSON{
 			Name:        service.Name,
 			Label:       service.Label,

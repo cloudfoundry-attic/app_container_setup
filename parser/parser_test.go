@@ -1,24 +1,25 @@
 package parser
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	. "launchpad.net/gocheck"
 	"os/exec"
-	"io/ioutil"
-	"strings"
-	"fmt"
-	"encoding/json"
 	"strconv"
+	"strings"
 )
 
 type InputData struct {
-	Debug string
-	Index int
-	InstanceGuid string
-	InstanceContainerPort int
+	Debug                        string
+	Index                        int
+	InstanceGuid                 string
+	InstanceContainerPort        int
 	InstanceConsoleContainerPort int
-	InstanceDebugContainerPort int
-	Services string
+	InstanceDebugContainerPort   int
+	Services                     string
 }
+
 const Mem = 1024
 const Index = 2
 const InstanceGuid = "BEEF"
@@ -105,13 +106,13 @@ func GenerateMostlyEmptyServiceJson() string {
 }
 
 type ServiceData struct {
-	Label string
+	Label    string
 	Provider string
-	Version string
-	Vendor string
-	Plan string
-	Name string
-	URI string
+	Version  string
+	Vendor   string
+	Plan     string
+	Name     string
+	URI      string
 }
 
 type ParserSuite struct {
@@ -129,12 +130,12 @@ func (suite *ParserSuite) SetUpTest(c *C) {
 	suite.inputData.Services = "[]"
 }
 
-func (suite *ParserSuite) GetEnvironmentVariablesForJSON(json string, c *C) (map[string]string) {
+func (suite *ParserSuite) GetEnvironmentVariablesForJSON(json string, c *C) map[string]string {
 	parser := NewParser()
 	script, err := parser.GenerateEnvironmentScriptFromJSON(json)
 	c.Assert(err, IsNil)
 
-	ioutil.WriteFile("/tmp/env_test", []byte(script + "\n env"), 0777)
+	ioutil.WriteFile("/tmp/env_test", []byte(script+"\n env"), 0777)
 	output, err := exec.Command("/bin/bash", "/tmp/env_test").Output()
 	c.Assert(err, IsNil)
 
@@ -161,8 +162,8 @@ func (suite *ParserSuite) TestExportingBasicSystemEnvironmentVariables(c *C) {
 	environment := suite.GetEnvironmentVariablesForJSON(GenerateJSON(suite.inputData), c)
 
 	c.Assert(environment["MEMORY_LIMIT"], Equals, "1024m")
-	c.Assert(environment["HOME"], Equals, environment["PWD"] + "/app")
-	c.Assert(environment["TMPDIR"], Equals, environment["PWD"] + "/tmp")
+	c.Assert(environment["HOME"], Equals, environment["PWD"]+"/app")
+	c.Assert(environment["TMPDIR"], Equals, environment["PWD"]+"/tmp")
 	c.Assert(environment["VCAP_APP_HOST"], Equals, "0.0.0.0")
 	c.Assert(environment["VCAP_APP_PORT"], Equals, strconv.Itoa(InstanceContainerPort))
 	c.Assert(environment["VCAP_CONSOLE_IP"], Equals, "0.0.0.0")
@@ -221,7 +222,7 @@ func (suite *ParserSuite) TestApplicationJsonEnvironmentVariables(c *C) {
 	c.Assert(application_json["application_name"], Equals, ApplicationName)
 	c.Assert(application_json["name"], Equals, ApplicationName)
 
-	c.Assert(application_json["uris"], DeepEquals, []interface {}{"simple-app.cfapp.com", "other-simple-app.cfapp.com"})
+	c.Assert(application_json["uris"], DeepEquals, []interface{}{"simple-app.cfapp.com", "other-simple-app.cfapp.com"})
 
 	c.Assert(application_json["users"], IsNil)
 }
@@ -238,10 +239,10 @@ func (suite *ParserSuite) TestServicesJsonEnvironmentVariablesWithNoServices(c *
 }
 
 func (suite *ParserSuite) TestServicesJsonEnvironmentVariablesWithMultipleService(c *C) {
-	service1 := &ServiceData{Label: "label-1", Provider: "provider-1", Version: "version-1", Vendor: "vendor-1", Plan: "plan-1", Name: "name-1", URI:"http://foo.com"}
-	service2 := &ServiceData{Label: "label-2", Provider: "provider-2", Version: "version-2", Vendor: "vendor-2", Plan: "plan-2", Name: "name-2", URI:"http://foo.com"}
+	service1 := &ServiceData{Label: "label-1", Provider: "provider-1", Version: "version-1", Vendor: "vendor-1", Plan: "plan-1", Name: "name-1", URI: "http://foo.com"}
+	service2 := &ServiceData{Label: "label-2", Provider: "provider-2", Version: "version-2", Vendor: "vendor-2", Plan: "plan-2", Name: "name-2", URI: "http://foo.com"}
 
-	suite.inputData.Services = fmt.Sprintf("[%s,%s]", GenerateServiceJson(service1),GenerateServiceJson(service2))
+	suite.inputData.Services = fmt.Sprintf("[%s,%s]", GenerateServiceJson(service1), GenerateServiceJson(service2))
 
 	environment := suite.GetEnvironmentVariablesForJSON(GenerateJSON(suite.inputData), c)
 	c.Assert(environment, HasKey, "VCAP_SERVICES")
@@ -251,16 +252,16 @@ func (suite *ParserSuite) TestServicesJsonEnvironmentVariablesWithMultipleServic
 	c.Assert(err, IsNil)
 	c.Assert(len(services_json), Equals, 2)
 
-	for index := 1 ; index <= 2; index++ {
+	for index := 1; index <= 2; index++ {
 		i := strconv.Itoa(index)
-		c.Assert(services_json["label-" + i], NotNil)
-		service_json := services_json["label-" + i].(map[string]interface{})
-		c.Assert(service_json["name"], Equals, "name-" + i)
-		c.Assert(service_json["label"], Equals, "label-" + i)
+		c.Assert(services_json["label-"+i], NotNil)
+		service_json := services_json["label-"+i].(map[string]interface{})
+		c.Assert(service_json["name"], Equals, "name-"+i)
+		c.Assert(service_json["label"], Equals, "label-"+i)
 		c.Assert(service_json["tags"], DeepEquals, []interface{}{"some-tag", "some-other-tag"})
-		c.Assert(service_json["credentials"], DeepEquals, map[string]interface{}{"password": "PASSWORD", "uri":"http://foo.com"})
+		c.Assert(service_json["credentials"], DeepEquals, map[string]interface{}{"password": "PASSWORD", "uri": "http://foo.com"})
 		c.Assert(service_json["plan_option"], DeepEquals, map[string]interface{}{"what": "is this?"})
-		c.Assert(service_json["plan"], Equals, "plan-" + i)
+		c.Assert(service_json["plan"], Equals, "plan-"+i)
 	}
 }
 
@@ -284,8 +285,8 @@ func (suite *ParserSuite) TestDatabaseURLEnvironmentVariablesWithNoServices(c *C
 }
 
 func (suite *ParserSuite) TestDatabaseURLEnvironmentVariableWithServices(c *C) {
-	service1 := &ServiceData{Label: "foo", Provider: "provider-1", Version: "version-1", Vendor: "vendor-1", Plan: "plan-1", Name: "foo_production", URI:"postgresql://a:b@foo.com?q=2"}
-	service2 := &ServiceData{Label: "bar", Provider: "provider-1", Version: "version-1", Vendor: "vendor-1", Plan: "plan-1", Name: "bar", URI:"mysql://a:b@bar.com?q=2"}
+	service1 := &ServiceData{Label: "foo", Provider: "provider-1", Version: "version-1", Vendor: "vendor-1", Plan: "plan-1", Name: "foo_production", URI: "postgresql://a:b@foo.com?q=2"}
+	service2 := &ServiceData{Label: "bar", Provider: "provider-1", Version: "version-1", Vendor: "vendor-1", Plan: "plan-1", Name: "bar", URI: "mysql://a:b@bar.com?q=2"}
 	suite.inputData.Services = fmt.Sprintf("[%s,%s]", GenerateServiceJson(service1), GenerateServiceJson(service2))
 	environment := suite.GetEnvironmentVariablesForJSON(GenerateJSON(suite.inputData), c)
 	c.Assert(environment["DATABASE_URL"], Equals, "postgres://a:b@foo.com?q=2")
@@ -293,4 +294,3 @@ func (suite *ParserSuite) TestDatabaseURLEnvironmentVariableWithServices(c *C) {
 
 //todo: test profile.d stuff
 //todo: test user environments
-

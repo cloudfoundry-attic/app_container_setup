@@ -1,10 +1,10 @@
 package parser
 
 import (
-	. "launchpad.net/gocheck"
-	"testing"
-	"regexp"
 	"fmt"
+	. "launchpad.net/gocheck"
+	"regexp"
+	"testing"
 )
 
 func Test(t *testing.T) { TestingT(t) }
@@ -85,7 +85,7 @@ func (checker *betterNotChecker) Info() *CheckerInfo {
 
 func (checker *betterNotChecker) Check(params []interface{}, names []string) (result bool, error string) {
 	result, error = checker.sub.Check(params, names)
-	if (result) {
+	if result {
 		return false, checker.sub.NegationMessage()
 	}
 	return true, ""
@@ -118,7 +118,7 @@ func (checker *hasKeyChecker) Check(params []interface{}, names []string) (resul
 	}
 
 	_, ok = typecastMapToCheck[keyAsString]
-	if (!ok) {
+	if !ok {
 		return false, "Map does not have key " + keyAsString
 	} else {
 		checker.NegationString = "Map has unexpected key " + keyAsString

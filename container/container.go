@@ -13,6 +13,7 @@ type ContainerCreator interface {
 	Create([]*BindMount) error
 	SetDiskLimit(limitInBytes uint64) error
 	SetMemoryLimit(limitInBytes uint64) error
+	Handle() string
 }
 
 type BindMount struct {
@@ -69,4 +70,8 @@ func (c *Container) SetMemoryLimit(limitInBytes uint64) error {
 
 func (c *Container) ConfigureHomeDirectory() {
 
+}
+
+func (c *Container) Handle() string {
+	return c.handle
 }

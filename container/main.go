@@ -6,7 +6,7 @@ import (
 )
 
 type CommandLineJson struct {
-	DiskLimitInBytes   uint64       `json:"disk_limit_in_bytes",required`
+	DiskLimitInBytes   uint64       `json:"disk_limit_in_bytes"`
 	MemoryLimitInBytes uint64       `json:"memory_limit_in_bytes"`
 	BindMounts         []*BindMount `json:"bind_mounts"`
 	WardenSocketPath   string       `json:"warden_socket_path"`
@@ -15,6 +15,10 @@ type CommandLineJson struct {
 type State struct {
 	Container       ContainerCreator
 	CommandLineJson *CommandLineJson
+}
+
+type CreationResult struct {
+	Handle string `json:"handle"`
 }
 
 func NewState(container ContainerCreator, commandLineJson *CommandLineJson) *State {
@@ -28,8 +32,9 @@ func Main(inputJson string) (*State, error) {
 	container := NewContainer(warden.NewClient(connectionInfo))
 
 	state := &State{CommandLineJson: commandLineJson, Container: container}
-	//	state.Perform
-	return state, err
+	state.Perform()
+
+	return nil, err
 }
 
 func parseInput(inputJson string) (*CommandLineJson, error) {
@@ -43,6 +48,10 @@ func (s *State) Perform() {
 	s.Container.Create(s.CommandLineJson.BindMounts)
 	s.Container.SetDiskLimit(s.CommandLineJson.DiskLimitInBytes)
 	s.Container.SetMemoryLimit(s.CommandLineJson.MemoryLimitInBytes)
+}
+
+func (s *State) Result() *CreationResult {
+	return &CreationResult{s.Container.Handle()}
 }
 
 func (c *CommandLineJson) IsValid() bool {

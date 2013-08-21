@@ -1,7 +1,7 @@
 package container
 
 import (
-	//	"errors"
+	"encoding/json"
 	//	warden "github.com/cloudfoundry/gordon"
 	. "launchpad.net/gocheck"
 )
@@ -11,11 +11,6 @@ type MainSuite struct {
 
 func init() {
 	Suite(&MainSuite{})
-}
-
-func (s *MainSuite) TestMainReturnsErrorForInvalidJson(c *C) {
-	_, err := Main("")
-	c.Assert(err, NotNil)
 }
 
 func (s *MainSuite) TestParseForValidJson(c *C) {
@@ -43,6 +38,7 @@ type FakeContainer struct {
 	CreateCalls         [][]*BindMount
 	SetDiskLimitCalls   []uint64
 	SetMemoryLimitCalls []uint64
+	handle              string
 }
 
 func (c *FakeContainer) Create(bindMounts []*BindMount) error {
@@ -60,6 +56,10 @@ func (c *FakeContainer) SetMemoryLimit(limitInBytes uint64) error {
 	return nil
 }
 
+func (c *FakeContainer) Handle() string {
+	return c.handle
+}
+
 func (s *MainSuite) TestStatePerformingContainerCreation(c *C) {
 	fakeContainer := &FakeContainer{}
 	state := NewState(fakeContainer,
@@ -71,11 +71,24 @@ func (s *MainSuite) TestStatePerformingContainerCreation(c *C) {
 	c.Assert(fakeContainer.SetMemoryLimitCalls, DeepEquals, []uint64{456})
 }
 
-//
-//func (s *MainSuite) TestMainComplainingForMissingValues(c *C) {
-//	config, err := parseInput(`{
-//	"disk_limit_in_bytes": 100
-//	}`)
-//	c.Assert(err, IsNil)
-//	c.Assert(config.DiskLimitInBytes, Equals, int64(100))
-//}
+func (s *MainSuite) TestCreationResult(c *C) {
+	var result CreationResult
+	err := json.Unmarshal([]byte(`
+		{
+		  "handle": "warden123"
+		}
+		`), &result)
+	c.Assert(err, IsNil)
+
+	c.Assert(result.Handle, Equals, "warden123")
+}
+
+func (s *MainSuite) TestStateResult(c *C) {
+	fakeContainer := &FakeContainer{Handle: "the-warden-handle"}
+	state := NewState(fakeContainer,
+		&CommandLineJson{DiskLimitInBytes: 123, MemoryLimitInBytes: 456})
+
+	result := state.Result()
+
+	c.Assert(result.Handle, Equals, "the-warden-handle")
+}
